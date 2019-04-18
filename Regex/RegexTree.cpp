@@ -198,6 +198,7 @@ std::pair<uint32_t,uint32_t> parseTimes(const char* regex,uint32_t& idx){
 		else snd_time += snd_time * 10 + regex[idx] - '0';
 		idx++;
 	}
+	if (!snd_time) snd_time = Max;
 	idx++;
 	return { fst_time,snd_time };
 }

@@ -10,6 +10,47 @@ Node* combinate_node(Node*, Node*);
 std::unordered_set<Node*> g_node_pool;
 std::unordered_set<Edge*> g_edge_pool;
 
+static inline bool is_complex_repeat(RepeatTree* tree) {
+	uint32_t min = tree->min_times, max = tree->max_times;
+	if ((min > 1) || (min == 1 && max != Max)) return true;
+	else return false;
+}
+
+static NFA* complex_repeat_2_NFA(RepeatTree* tree) {
+	uint32_t min_times = tree->min_times, max_times = tree->max_times;
+	
+	Node* start = new Node;
+	Node* end = new Node(AcceptS);
+	g_node_pool.insert(start);
+	g_node_pool.insert(end);
+
+	NFA* pre = Re2NFA(tree->repeat_tree);
+	if (max_times == Max) {
+		Edge* edge = new Edge(pre->end, pre->start);
+		g_edge_pool.insert(edge);
+		pre->end->outEdges.push_back(edge);
+	}
+	for (uint32_t i = 1; i < min_times; ++i) {
+		pre = link_nfa(pre, Re2NFA(tree->repeat_tree));
+	}
+	Edge* edge_2 = new Edge(pre->end, end);
+	g_edge_pool.insert(edge_2);
+	pre->end->outEdges.push_back(edge_2);
+	for (uint32_t i = 0; i < max_times - min_times&&max_times!=Max; i++) {
+		NFA* nfa = Re2NFA(tree->repeat_tree);
+		Edge* edge = new Edge(nfa->end, end);
+		g_edge_pool.insert(edge);
+		nfa->end->outEdges.push_back(edge);
+		pre = link_nfa(pre, nfa);
+	}
+	pre->end->state = NonAcceptS;
+	Edge* edge_1 = new Edge(start, pre->start);
+	g_edge_pool.insert(edge_1);
+	start->outEdges.push_back(edge_1);
+	delete pre;
+	return new NFA(start, end);
+}
+
 NFA* Re2NFA(RegexTree* tree) {
 	switch (tree->type)
 	{
@@ -86,10 +127,12 @@ NFA* ParallelTree2NFA(ParallelTree* tree) {
 	return result;
 }
 
-// 目前只考虑了 ? + * 三种情况，后续的固定数目的重复还有待考虑。
-NFA* RepeatTree2NFA(RepeatTree* tree) {
-	NFA* old_nfa = Re2NFA(tree->repeat_tree);
 
+
+NFA* RepeatTree2NFA(RepeatTree* tree) {
+	if (is_complex_repeat(tree)) return complex_repeat_2_NFA(tree);
+
+	NFA* old_nfa = Re2NFA(tree->repeat_tree);
 	Node* new_start = new Node(NonAcceptS);
 	Node* new_end = new Node(AcceptS);
 	Node* old_start = old_nfa->start;

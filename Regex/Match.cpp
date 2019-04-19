@@ -7,6 +7,16 @@
 
 static uint32_t state_idx;
 static std::unordered_map<Node*, uint32_t> last_occur_table;
+static std::unordered_map<const char*, NFA*> nfa_cache;
+
+static inline NFA* get_nfa(const char* re) {
+	if (nfa_cache.find(re) != nfa_cache.end()) return nfa_cache[re];
+	RegexTree* tree = getParseResult(re);
+	NFA* new_nfa = Re2NFA(tree);
+	nfa_cache[re] = new_nfa;
+	delete tree;
+	return new_nfa;
+}
 
 //在每次对一个字符进入一个新的状态时，需要对这个新的状态进行扩展，因为可能存在很多空边，
 //但是在添加空边终端状态时，我们来要考虑一种情况，就是这个状态可能在一次更新状态中出现多次，
@@ -44,10 +54,8 @@ static void step_to(const std::vector<Node*>& src, char c,std::vector<Node*>& de
 	}
 }
 
-//贪婪匹配
  std::vector<uint32_t> match_points(const char* text, const char* re) {
-	RegexTree* tree = getParseResult(re);
-	NFA* nfa = Re2NFA(tree);
+	 NFA* nfa = get_nfa(re);
 
 	std::vector<uint32_t> result;
 	if (!nfa) return result;
@@ -74,7 +82,8 @@ static void step_to(const std::vector<Node*>& src, char c,std::vector<Node*>& de
 }
 
 bool match_all_text(const char* text, const char* re) {
-	NFA* nfa = Re2NFA(getParseResult(re));
+	NFA* nfa = get_nfa(re);
+
 	if (!nfa) return *re == '/0';	
 	std::vector<Node*> states;
 	add_state(nfa->start, states);

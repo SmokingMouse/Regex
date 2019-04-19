@@ -189,16 +189,12 @@ std::pair<uint32_t,uint32_t> parseTimes(const char* regex,uint32_t& idx){
 	uint32_t fst_time = 0, snd_time = 0;
 	bool parseFirst = true;
 	while (regex[idx] != g_ctl_right_brace) {
-		if (isspace(normalChar(regex[idx]))) {
-			++idx;
-			continue;
-		}
 		if (regex[idx] == g_ctl_comma) { parseFirst = false; }
 		else if (parseFirst) fst_time += fst_time * 10 + regex[idx] - '0';
 		else snd_time += snd_time * 10 + regex[idx] - '0';
 		idx++;
 	}
-	if (!snd_time) snd_time = Max;
+	if (!snd_time) snd_time = parseFirst ? fst_time : Max;
 	idx++;
 	return { fst_time,snd_time };
 }

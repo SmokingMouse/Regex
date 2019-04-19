@@ -8,7 +8,5 @@
 #include"Match.h"
 
 int main() {
-	auto result = match_all_text("helloworld", R"(hel{2,}oworld)");
-//	test(R"(hel{2,})");
-//	test(R"(l{1,1})");
+	
 }

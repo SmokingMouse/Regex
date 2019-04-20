@@ -12,8 +12,8 @@ std::unordered_set<Edge*> g_edge_pool;
 
 static inline bool is_complex_repeat(RepeatTree* tree) {
 	uint32_t min = tree->min_times, max = tree->max_times;
-	if ((min > 1) || (min == 1 && max != Max)) return true;
-	else return false;
+	if ((min <= 1&&max == Max) || (min == 0 && max == 1)) return false;
+	else return true;
 }
 
 static NFA* complex_repeat_2_NFA(RepeatTree* tree) {
@@ -24,7 +24,7 @@ static NFA* complex_repeat_2_NFA(RepeatTree* tree) {
 	g_node_pool.insert(start);
 	g_node_pool.insert(end);
 
-	NFA* pre = Re2NFA(tree->repeat_tree);
+	NFA* pre = (min_times == 0)? NullNFA() : Re2NFA(tree->repeat_tree);
 	if (max_times == Max) {
 		Edge* edge = new Edge(pre->end, pre->start);
 		g_edge_pool.insert(edge);
@@ -33,9 +33,11 @@ static NFA* complex_repeat_2_NFA(RepeatTree* tree) {
 	for (uint32_t i = 1; i < min_times; ++i) {
 		pre = link_nfa(pre, Re2NFA(tree->repeat_tree));
 	}
+
 	Edge* edge_2 = new Edge(pre->end, end);
 	g_edge_pool.insert(edge_2);
 	pre->end->outEdges.push_back(edge_2);
+
 	for (uint32_t i = 0; i < max_times - min_times&&max_times!=Max; i++) {
 		NFA* nfa = Re2NFA(tree->repeat_tree);
 		Edge* edge = new Edge(nfa->end, end);
@@ -43,11 +45,13 @@ static NFA* complex_repeat_2_NFA(RepeatTree* tree) {
 		nfa->end->outEdges.push_back(edge);
 		pre = link_nfa(pre, nfa);
 	}
+		
 	pre->end->state = NonAcceptS;
 	Edge* edge_1 = new Edge(start, pre->start);
 	g_edge_pool.insert(edge_1);
 	start->outEdges.push_back(edge_1);
 	delete pre;
+	
 	return new NFA(start, end);
 }
 
@@ -61,6 +65,18 @@ NFA* Re2NFA(RegexTree* tree) {
 	default:
 		return NULL;
 	}
+}
+
+NFA* NullNFA() {
+	Node* start = new Node;
+	Node* end = new Node(AcceptS);
+	Edge* edge = new Edge(start, end);
+
+	g_edge_pool.insert(edge);
+	g_node_pool.insert(start);
+	g_node_pool.insert(end);
+	start->outEdges.push_back(edge);
+	return new NFA(start, end);
 }
 
 //连接两个NFA，变的只可能是NFA状态。

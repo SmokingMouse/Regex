@@ -18,6 +18,11 @@ static inline NFA* get_nfa(const char* re) {
 	return new_nfa;
 }
 
+static inline void exit_work() {
+	state_idx = 0;
+	last_occur_table.clear();
+}
+
 //在每次对一个字符进入一个新的状态时，需要对这个新的状态进行扩展，因为可能存在很多空边，
 //但是在添加空边终端状态时，我们来要考虑一种情况，就是这个状态可能在一次更新状态中出现多次，
 //所以我们维护一个map，表示上次出现在状态集时，是第几个字符匹配完。
@@ -68,7 +73,10 @@ static void step_to(const std::vector<Node*>& src, char c,std::vector<Node*>& de
 		std::vector<Node*> new_states;
 		state_idx++;
 		step_to(states, text[idx],new_states);
-		if (new_states.empty()) return result;
+		if (new_states.empty()) {
+			exit_work();
+			return result;
+		}
 		for (auto item : new_states) {
 			if (item->state == AcceptS) {
 				result.push_back(idx);
@@ -78,13 +86,14 @@ static void step_to(const std::vector<Node*>& src, char c,std::vector<Node*>& de
 		states.assign(new_states.begin(), new_states.end());
 		++idx;
 	}
+	exit_work();
 	return result;
 }
 
 bool match_all_text(const char* text, const char* re) {
 	NFA* nfa = get_nfa(re);
 
-	if (!nfa) return *re == '/0';	
+	if (!nfa) return *re == '\0';	
 	std::vector<Node*> states;
 	add_state(nfa->start, states);
 
@@ -93,13 +102,20 @@ bool match_all_text(const char* text, const char* re) {
 		std::vector<Node*> new_states;
 		state_idx++;
 		step_to(states, text[idx], new_states);
-		if (new_states.empty()) return false;
+		if (new_states.empty()) {
+			exit_work();
+			return false;
+		}
 		states.assign(new_states.begin(), new_states.end());
 		++idx;
 	}
 
 	for (auto item : states) {
-		if (item->state == AcceptS) return true;
+		if (item->state == AcceptS) {
+			exit_work();
+			return true;
+		}
 	}
+	exit_work();
 	return false;
 }

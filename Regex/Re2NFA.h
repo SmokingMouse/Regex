@@ -53,3 +53,4 @@ NFA* SeriesTree2NFA(SeriesTree*);
 NFA* ParallelTree2NFA(ParallelTree*);
 NFA* RepeatTree2NFA(RepeatTree*);
 NFA* CharClass2NFA(CharClass*);
+NFA* NullNFA();

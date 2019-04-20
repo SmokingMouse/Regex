@@ -19,6 +19,7 @@ char getCharFromBitset(const Bitmap& b) {
 	}
 }
 
+
 void test(const char* re) {
 	RegexTree* tree = getParseResult(re);
 	NFA* nfa = Re2NFA(tree);
